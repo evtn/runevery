@@ -97,9 +97,9 @@ class SchedulingTask:
         self.run(self.callback, scheduler, event_loop)
 
     def run(self, callback: TaskCallback, scheduler: Scheduler, event_loop):
-        async def callback_wrapper(task: SchedulingTask):
+        async def callback_wrapper(**kwargs):
             try:
-                await callback(task)
+                await callback(**kwargs)
             except:
                 if self.on_error:
                     self.run_callback(self.on_error, scheduler, event_loop)

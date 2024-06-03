@@ -216,3 +216,22 @@ async def ummmm():
     print("I don't know")
 
 ```
+
+## Error handling
+
+> [IMPORTANT]
+> Error callback has to have the same arguments as original the task callback. This limitation may be removed in future versions.
+
+You can pass an extra callback into `on_error` argument:
+
+```python
+from runevery import run
+
+async def error_happens():
+    print(":(")
+
+@run.once(on_error=error_happens)
+async def thisfails():
+    raise ValueError
+
+```
