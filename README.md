@@ -219,7 +219,7 @@ async def ummmm():
 
 ## Error handling
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > Error callback has to have the same arguments as original the task callback. This limitation may be removed in future versions.
 
 You can pass an extra callback into `on_error` argument:
