@@ -28,7 +28,7 @@ For more details, check out the [PyPI page](https://pypi.org/project/runevery/).
 
 Let's start with some basic usage examples to get you familiar with runevery.
 
-### Fetching emails every 10 minutes
+### Example: Fetching emails every 10 minutes
 
 Suppose you want to fetch your emails every 10 minutes. Here's how you can do it:
 
@@ -230,7 +230,7 @@ async def stop_everything(scheduler: Scheduler):
 asyncio_run(run.loop())
 ```
 
-### Pause a task
+## Pause a task
 
 If you need to suspend (pause) the task execution `task.pause_for` and `task.pause_until` are for your service
 
@@ -245,7 +245,7 @@ async def pausable_task(task: SchedulingTask):
 asyncio_run(run.loop())
 ```
 
-### Run a task on a custom condition
+## Run a task on a custom condition
 
 Want to run a task based on a custom condition? Use a custom planner.
 
@@ -263,7 +263,7 @@ async def custom_task():
 asyncio_run(scheduler.loop())
 ```
 
-### Handle errors
+## Handle errors
 
 Need to handle errors in your tasks? Provide an `on_error` callback.
 
