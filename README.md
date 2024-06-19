@@ -1,237 +1,280 @@
-Runevery (one word, as in 'bakery') is a simple async scheduling library to rule all your tasks.
+# Runevery task when it's time
+
+Runevery (one word, as in 'bakery') is a simple async scheduling library designed to schedule tasks in _no time_. With a simple and intuitive API, you can plan and manage tasks to run at specific intervals, times, or even based on custom conditions. No more writing complex loops and time checks!
 
 > [!NOTE]
 > It is highly recommended to use type-checking with runevery. Not only did I spent some time polishing it here, but also types are cool and nice. And I won't be covering some stuff that is obvious from the names.
 
 > [!IMPORTANT]
-> This package is fresh and the readme is a stub. It includes most of the information, but at times poorly worded or structured. This doc doesn't have enough examples of advanced usage, which is also not great.
+> This package is fresh and both the readme and the API are not very stable and finished. Feel free to create issues and stuff, but be aware that this is at its early stages.
 
-# Installation
+## Installation
 
-Just install [`runevery` package](https://pypi.org/project/runevery/) (pip, poetry, you name it).
+You can install runevery from PyPI using pip. Just run:
 
-# Introduction
-
-Let's say we want to update user information every hour.
-
-```python
-import asyncio
-from runevery import run
-
-@run.every.hour
-async def update_users():
-    ...
-
-# this last line and asyncio import are omitted in other examples for clarity
-asyncio.run(run.loop())
+```sh
+pip install runevery
 ```
 
-Well... That is what you need.
+Or, if you prefer Poetry:
 
-Okay, maybe every two hours then?
+```sh
+poetry add runevery
+```
+
+For more details, check out the [PyPI page](https://pypi.org/project/runevery/).
+
+## Basic usage
+
+Let's start with some basic usage examples to get you familiar with runevery.
+
+### Fetching emails every 10 minutes
+
+Suppose you want to fetch your emails every 10 minutes. Here's how you can do it:
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.every(minutes=10)
+async def fetch_emails():
+    print("Very convincing code to fetch e-mails or something")
+
+asyncio_run(run.loop())
+```
+
+### Example: Updating weather data every hour
+
+Need to update your weather data every hour? No problem!
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.every(hours=1)
+async def update_weather():
+    print("Updating weather data...")
+
+asyncio_run(run.loop())
+```
+
+### Example: Running a task once at startup
+
+Sometimes, you might want to run a task just once at startup. Here's how:
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.once()
+async def startup_task():
+    print("Running startup task...")
+
+asyncio_run(run.loop())
+```
+
+### Example: Running a task after a specific time
+
+Want to run a task after a specific Unix timestamp, just for fun? We have a tool for that, it's called `scheduler.after`:
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.after(offset=1718567362)
+async def run_after_timestamp():
+    print("Running after specific timestamp...")
+
+asyncio_run(run.loop())
+```
+
+## What's a scheduler, anyway?
+
+### What is the scheduler task loop?
+
+The scheduler and its task loop are the core of runevery. It continuously ticks through all scheduled tasks, checking if it's time to run them based on their planners.
+
+But how does the scheduler know when to run a task? It doesn't. **CREDITS ROLL**
+Okay, but actually, it just ticks every task, and each task's planner decides if it's time to run.
+
+### What are the arguments to scheduler methods?
+
+Let's break down the arguments you can pass to `scheduler.plan`, `scheduler.every`, `scheduler.once`, `scheduler.at`, and `scheduler.after`.
+
+#### Example: Using `scheduler.every`
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.every(seconds=30)
+async def every_30_seconds():
+    print("Running every 30 seconds")
+
+asyncio_run(run.loop())
+```
+
+#### Example: Using `scheduler.at`
+
+```python
+from asyncio import run as asyncio_run
+from runevery import run
+
+@run.at(interval=86400, hours=15)
+async def daily_at_3pm():
+    print("Running daily at 3 PM")
+
+asyncio_run(run.loop())
+```
+
+## What's a planner?
+
+Planners are the brains behind the scheduling. They decide if a task should run based on various conditions.
+
+### Built-in planners
+
+#### IntervalPlanner
+
+Runs tasks at fixed intervals.
+
+```python
+from runevery import IntervalPlanner, run
+
+
+@run.plan(planner=IntervalPlanner(interval=60))
+async def every_minute():
+    print("Running every minute")
+
+asyncio_run(run.loop())
+```
+
+#### FixedOffsetPlanner
+
+Runs tasks at a fixed timestamp, optionally repeating at intervals.
+
+```python
+from runevery import FixedOffsetPlanner, Scheduler
+
+scheduler = Scheduler()
+
+@scheduler.plan(planner=FixedOffsetPlanner(offset=1718567362, interval=3600))
+async def hourly_after_timestamp():
+    print("Running hourly after a specific timestamp")
+
+asyncio_run(scheduler.loop())
+```
+
+#### CooldownPlanner
+
+Runs tasks based on a cooldown period.
+
+```python
+from runevery import CooldownPlanner, run
+
+class MyCooldownSource:
+    def get_cooldown(self, interval: float):
+        return 0  # Replace with actual cooldown logic
+
+@run.plan(planner=CooldownPlanner(MyCooldownSource(), interval=300))
+async def cooldown_task():
+    print("Running with cooldown")
+
+asyncio_run(run.loop())
+```
+
+## Interval strategy
+
+The interval strategy defines if the interval is counted from the start or the end of the run.
+
+-   Use `"start"` (default), when you want to count interval from the start of the previous task. The duration between callback starts doesn't drift, since it doesn't depend on the task duration.
+-   Use `"end"`, when you care about interval _between_ tasks. This interval starts counting after the previous task has ended, so the pause between tasks doesn't drift.
 
 ```python
 from runevery import run
+from asyncio import sleep
 
-# @run.every.2hours # oops, that didn't work
-@run.every.two_hours # i mean...
-async def update_users():
-    ...
+@run.every(seconds=10, interval_strategy="end")
+async def very_long_task():
+    await sleep(3600)
+    print("This task will run each ~3610 seconds, despite the interval beint 10 seconds")
+
+asyncio_run(run.loop())
 ```
 
-Well, full disclosure, you don't necessarily need to call `run.every.two_hours_and_seven_minutes` (although you actually can), you can actually use `run.every(hours=2, minutes=7)`:
+## Arguments to the task callback
+
+Task callbacks can receive optional arguments like `task` and `scheduler`.
 
 ```python
-from runevery import run
+from runevery import run, Scheduler, SchedulingTask
 
-@run.every(hours=2, minutes=7)
-async def update_users():
-    ...
+@run.every(minutes=5)
+async def task_with_args(task: SchedulingTask, scheduler: Scheduler):
+    print(f"Task {task.final_name} running with scheduler {scheduler}")
+
+asyncio_run(run.loop())
 ```
 
-But that's boring. Let's dive into some other features.
+## STOP RUNNING TASKS
 
-# Advanced
-
-## Task scheduling process explanation
-
-`runevery` is a rather simple library when it comes to checking if a task should run.
-
-You start with a `Scheduler` instance (runevery.run is a pre-defined one).  
-Then you populate it's task pool (the best way is through `scheduler.every`, but you can also add tasks to the scheduler.tasks dict) with instances of `SchedulingTask`.
-
-On creation, `SchedulingTask` creates its own run queue with one element (current timestamp). This queue defines when the executions should take place. It doesn't try to add many elements to the queue, one (next run) is often enough.
-
-When you run the scheduler loop, it iterates over all tasks and gives each one a tick (calls `task.tick(self)`, actually). Task then decides if it should run a callback (if the nearest element of the queue is less than the current time and no [aging](#aging) is involved).
-
-Then it uses something similar to `loop.create_task(callback(...))` to run your callback, removes the used queue entry and inserts a new one. That's all!
-
-## Aging
-
-Often, recurring tasks are not just "need to run every 5 minutes", but bound to an external time state. For example, you may need to run a task every 24h, but exactly at 3:45 AM.
-Or you need to update your data not more that once in an hour, using a non-persistent script.
-
-In solutions like cron, the first example is trivial. But the second is rather weird for cron to use. `runevery` tries to solve both and more with "aging" information.
-
-You can attach any object that implements aging protocol (later on that), and the task will automatically reschedule if it needs to wait a bit more.
-
-Aging protocol is simple: you need anything with a method `get_remaining_time(interval: float) -> float`. This method accepts the interval from the task (in seconds), and should return the amount of time to wait. If it's positive, the task would reschedule to a later point.
-
-For example:
+Functions were not meant to be scheduled!!! Do this immediately:
 
 ```python
-from runevery import run
-import pickle as json # oopsie woopsie
-from time import time
+from runevery import run, Scheduler
 
-# a very good database implementation, do not try at home
-class VeryDatabase:
-    def __init__(self):
-        with open("mydatabase.txt") as file:
-            self.data = json.load(file)
+@run.once()
+async def stop_everything(scheduler: Scheduler):
+    for task in scheduler:
+        task.discard()
 
-    def get_remaining_time(self, interval: float) -> float:
-        return interval - (time() - self.data["last_update"])
-
-    def save(self):
-        with open("mydatabase.txt") as file:
-            json.dump(self.data)
-
-
-db = VeryDatabase()
-
-
-@run.every.five_days(use_age=db)
-async def update_db():
-    # this would run not more than once every 5 days, even if we restart the script over and over (assuming that our changes actually persist in the database)
-    db.data["last_update"] = time()
-    db.save()
+asyncio_run(run.loop())
 ```
 
-This solution is simple. `VeryDatabase.get_remaining_time` here calculates how much time had passed since the last update, and returns a difference between interval and that amount.  
-The result is basically the amount of time the scheduler needs to wait until interval has passed.
+### Pause a task
 
-> [!IMPORTANT]
-> Keep in mind that the "last_update" field in this example should not be changed from any other script (unless you want those changes to influence the scheduling).
-
-The rescheduling can be done more precisely and creatively, though:
-
-```python
-from runevery import run
-from time import time
-
-
-class RoundTimeEnjoyer:
-    def get_remaining_time(self, interval: float) -> float:
-        ts = int(time())
-
-        if ts % interval != 0: # it's not round enough
-            return 0.5 # wait 0.5 seconds to check again
-        return 0 # yay!
-
-
-@run.every(seconds=100_000_000, use_age=db)
-async def hundred_million_seconds():
-    print(f"yay! it's {int(time())}!") # "yay, it's 1800000000!" (well, your result might actually vary if you're checking this out after 15.01.2027)
-
-```
-
-Since the check is done before the callback is started, task can be rescheduled infinitely before your aging container eventually decides it's time.
-Be aware that this could actually skip a round second, so for some cases, a concrete rescheduling is needed (or checking that the callback was actually called, as in database example)
-
-## Manual scheduling magic
-
-Let's suppose you are smart enough to figure out the timestamp of the next run. You say "hey, I want to be able to manage scheduling from inside the callback!!! This is cool!".
-
-Yeah, okay. Add `task` argument to your callback:
+If you need to suspend (pause) the task execution `task.pause_for` and `task.pause_until` are for your service
 
 ```python
 from runevery import run, SchedulingTask
-from time import time
-from math import ceil
 
-def next_round():
-    return ceil(int(time()) // 100_000_000) * 100_000_000
+@run.every(minutes=5)
+async def pausable_task(task: SchedulingTask):
+    print("Running pausable task")
+    task.pause_for(600)  # Pause for 10 minutes
 
-
-@run.every # this is actually more like @run.once, but both are the same and we are managing the scheduling manually anyway
-async def hundred_million_seconds(task: SchedulingTask):
-    # task.schedule(timestamp) adds an entry in scheduling queue. Your task will run at this timestamp (or later in case of something blocking)
-    task.schedule(next_round())
-
-    if int(time()) % 100_000_000:
-        return
-
-    print(f"yay! it's {int(time())}!")
+asyncio_run(run.loop())
 ```
 
-This callback will run at scheduler loop start, as well as at timestamps such as 1800000000, 1900000000, and so on. The condition is needed to filter out the first non-round run.
+### Run a task on a custom condition
 
-Various methods for scheduling are:
-
-### task.schedule(timestamp: float)
-
-Adds a timestamp to the scheduling queue.
-
-### task.discard_run()
-
-Removes the nearest run from the scheduling queue. If the queue is empty, does nothing. If called from a task, removes the _next_ run (since the current is already removed)
-
-### task.reschedule(timestamp: float)
-
-Removes the next run and inserts a new one. Functionally equal to a `task.discard_run()` followed by a `task.schedule(timestamp)`
-
-### task.pause_until(timestamp: float, save_runs: bool = False)
-
-Pause task runs until `timestamp` time. If the nearest run is after `timestamp`, does nothing.
-
-If `save_runs=False` (default), removes all runs before `timestamp`. Otherwise, moves each run to `run_timestamp + timestamp - current_timestamp`.
-
-### task.pause_for(seconds: float, save_runs: bool = False)
-
-Same as `task.pause_until(current_timestamp + seconds, save_runs)`
-
-## Scheduler access from the callback
-
-Same as with task argument, you can add `scheduler` argument and enjoy the full access to the scheduler that has ticked this task. This can be useful if you want, for example, schedule even more tasks dynamically, or edit other tasks, etc.
-
-## Manual ticks
-
-Normally, you should call `scheduler.loop()` as an async coroutine and live happily ever after. But sometimes a more granular control is nice.  
-You can use `await scheduler.tick()` to run one iteration of task ticks (will call `sleep(0)` to give control after each task.tick(), if you don't want that, use `await scheduler.tick_nowait()` for an instant tick)
-
-## Many schedulers
-
-`runevery.run` is an instance of a `Scheduler` class. You may want to use several instances with separate task pools for some reason, just do that:
+Want to run a task based on a custom condition? Use a custom planner.
 
 ```python
-from runevery import Scheduler
+from runevery import run, SchedulingPlanner, SchedulingTask
 
-walk = Scheduler()
-drive = Scheduler()
-swim = Scheduler()
+class CustomConditionPlanner(SchedulingPlanner):
+    def check(self, task: SchedulingTask):
+        return some_custom_condition()
 
-@swim.every.five_weeks
-async def ummmm():
-    print("I don't know")
+@run.plan(planner=CustomConditionPlanner())
+async def custom_task():
+    print("Running custom task")
 
+asyncio_run(scheduler.loop())
 ```
 
-## Error handling
+### Handle errors
 
-> [!IMPORTANT]
-> Error callback has to have the same arguments as original the task callback. This limitation may be removed in future versions.
-
-You can pass an extra callback into `on_error` argument:
+Need to handle errors in your tasks? Provide an `on_error` callback.
 
 ```python
-from runevery import run
+from runevery import run, SchedulingTask
 
-async def error_happens():
-    print(":(")
+@run.every(minutes=5, on_error=lambda task: print(f"Error in {task.final_name}"))
+async def error_prone_task():
+    raise Exception("Oops!")
 
-@run.once(on_error=error_happens)
-async def thisfails():
-    raise ValueError
-
+asyncio_run(run.loop())
 ```
+
+And that's it! You've now got a solid understanding of how to use runevery to schedule tasks in Python. Happy scheduling!

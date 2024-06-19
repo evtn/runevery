@@ -110,11 +110,16 @@ def parse_interval(interval_string: str) -> float:
     return result / 1000
 
 
-def sum_units(data: dict[str, float]):
+def sum_units(data: dict[str, object]):
     result: float = 0
 
     for unit in data:
+        value = data[unit]
+
+        if not isinstance(value, (float, int)):
+            continue
+
         if unit in units:
-            result += units[unit] * data[unit]
+            result += units[unit] * value
 
     return result / 1000

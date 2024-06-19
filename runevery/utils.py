@@ -1,3 +1,5 @@
+from datetime import datetime
+
 duration_sizes = {86400000: "d", 3600000: "h", 60000: "m", 1000: "s", 1: "ms"}
 
 
@@ -15,3 +17,7 @@ def format_duration(duration: float) -> str:
         duration %= size
 
     return "".join(parts).strip()
+
+
+def format_time(ts: float) -> str:
+    return datetime.fromtimestamp(ts).strftime("[%d.%m.%Y, %H:%M:%S, %:::z]")

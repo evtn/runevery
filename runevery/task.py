@@ -4,39 +4,43 @@ import inspect
 from time import time
 from asyncio import Task, AbstractEventLoop, get_event_loop
 from time import time
-from typing_extensions import Coroutine, Protocol, Callable
-from heapq import heapify, heappush, heappop, heapreplace
+from typing_extensions import Coroutine, Callable
+from heapq import heapify
 from random import randint
-
-from .utils import format_duration
 
 
 TaskCallback = Callable[..., Coroutine[None, None, None]]
-
-
-class Aging(Protocol):
-    def get_remaining_time(self, interval: float) -> float:
-        ...
 
 
 class SchedulingTask:
     def __init__(
         self,
         callback: TaskCallback,
-        interval: float,
+        planner: SchedulingPlanner,
         on_error: TaskCallback | None = None,
-        use_age: Aging | None = None,
         name: str | None = None,
     ):
         self.callback = callback
         self.callback_kwargs = self.inspect_callback(callback)
         self.on_error = on_error
 
-        self.interval = interval
+        self.planner = planner
         self.runs: dict[float, Task[None]] = {}
         self.scheduled: list[float] = [self.time]
-        self.use_age = use_age
         self.name = name
+
+        self.last_run_start = 0
+        self.last_run_end = 0
+
+    def get_last_run(self, strategy: IntervalStrategy):
+        if strategy == "start":
+            return self.last_run_start
+
+        if self.last_run_start > self.last_run_end:
+            # runs now
+            return self.time
+
+        return self.last_run_end
 
     @property
     def time(self):
@@ -73,28 +77,11 @@ class SchedulingTask:
         task.add_done_callback(lambda _: self.runs.pop(random_id, None))
 
     def tick(self, scheduler: Scheduler, event_loop: AbstractEventLoop | None = None):
-        cur_time = self.time
-
-        if not self.scheduled:
-            return
-
-        if self.scheduled[0] > cur_time:
-            return
-
-        aging_obj = self.use_age
-
-        if aging_obj:
-            diff = aging_obj.get_remaining_time(self.interval)
-
-            if diff > 0:
-                self.reschedule(self.time + diff)
-                return
-
-        if self.interval:
-            self.schedule(cur_time + self.interval)
-
-        self.discard_run()
-        self.run(self.callback, scheduler, event_loop)
+        if self.planner.check(self):
+            self.last_run_start = self.time
+            self.run(self.callback, scheduler, event_loop)
+            self.planner.on_run(self)
+            self.last_run = self.time
 
     def run(self, callback: TaskCallback, scheduler: Scheduler, event_loop):
         async def callback_wrapper(**kwargs):
@@ -106,54 +93,26 @@ class SchedulingTask:
 
         self.run_callback(callback_wrapper, scheduler, event_loop)
 
-    def schedule(self, ts: float):
-        heappush(self.scheduled, ts)
+    def discard(self):
+        self.planner = NeverPlanner(interval_strategy="start")
 
-    def discard_run(self):
-        if len(self.scheduled):
-            heappop(self.scheduled)
+    def pause_until(self, ts: float):
+        def reinstate_switch(task: SchedulingTask):
+            new_planner.planners.pop(new_planner.planner_index)
+            self.planner = new_planner.planners[0]
+            return 0
 
-    def reschedule(self, ts: float):
-        if len(self.scheduled):
-            heapreplace(self.scheduled, ts)
-        else:
-            self.schedule(ts)
+        paused = FixedOffsetPlanner(offset=ts, interval=0)
 
-    def pause_until(self, timestamp: float, save_runs: bool = False):
-        i = 0
+        new_planner = SwitchPlanner(
+            planners=[self.planner, paused],
+            switch_callback=reinstate_switch,
+        )
 
-        if timestamp <= self.time:
-            timestamp = self.time
+        self.planner = new_planner
 
-        diff = timestamp - self.scheduled[0]
-
-        if diff < 0:
-            return
-
-        while i < len(self.scheduled):
-            if self.scheduled[i] > timestamp:
-                i += 1
-                continue
-
-            if save_runs:
-                self.scheduled[i] += diff
-                i += 1
-            else:
-                self.scheduled.pop(i)
-
-        if not self.scheduled:
-            self.scheduled.append(timestamp)
-
-        heapify(self.scheduled)
-
-    def pause_for(self, milliseconds: float, save_runs: bool = False):
-        self.pause_until(self.time + milliseconds, save_runs)
-
-    def format_freq(self) -> str:
-        if not self.interval:
-            return "once"
-
-        return f"every {format_duration(self.interval)}"
+    def pause_for(self, duration: float):
+        return self.pause_until(self.time + duration)
 
     @property
     def default_name(self):
@@ -164,7 +123,8 @@ class SchedulingTask:
         return self.name or self.default_name
 
     def __repr__(self):
-        return f"Task['run {self.final_name} {self.format_freq()}']"
+        return f"Task['run {self.final_name} {self.planner}']"
 
 
-from .scheduler import Scheduler
+from .scheduler import IntervalStrategy, Scheduler
+from .planners import FixedOffsetPlanner, NeverPlanner, SchedulingPlanner, SwitchPlanner
