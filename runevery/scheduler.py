@@ -97,7 +97,7 @@ class Scheduler:
 
     def once(self, **kwargs: Unpack[SchedulerPolicyKwargs]) -> SchedulerPolicy:
         """Although this may seem useless, this is a convenient way to do some stuff on startup or launch a long-running task along other tasks"""
-        return self.plan(**kwargs)
+        return self.after(ts=1, **kwargs)
 
     def __call__(self, **kwargs: Unpack[SchedulerPolicyKwargs]):
         return self.plan(**kwargs)
