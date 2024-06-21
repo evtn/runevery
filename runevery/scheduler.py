@@ -36,19 +36,19 @@ class Scheduler:
         self.tasks: dict[str, SchedulingTask] = {}
         self.name_counters: dict[str, int] = {}
 
-    async def tick(self) -> None:
-        """send ticks to every task, giving control on every iteration"""
+    async def tick(self, sleep_duration: float = 1e-5) -> None:
+        """send ticks to every task, releasing control on every iteration"""
         for task in self:
             task.tick(self)
-            await sleep(0)
+            await sleep(sleep_duration)
 
-    async def loop(self) -> None:
+    async def loop(self, sleep_duration: float = 1e-5) -> None:
         """run scheduler indefinitely"""
         while True:
-            await self.tick()
+            await self.tick(sleep_duration)
 
     async def tick_nowait(self) -> None:
-        """send ticks to every task, but do not give control at all"""
+        """send ticks to every task, but do not release control at all"""
         for task in self:
             task.tick(self)
 
