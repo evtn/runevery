@@ -264,8 +264,8 @@ class SchedulerPolicy:
     def __call__(
         self,
         f: TaskCallback,
-    ) -> None:
-        return self.scheduler.add_task(
+    ) -> TaskCallback:
+        self.scheduler.add_task(
             SchedulingTask(
                 callback=f,
                 planner=self.planner
@@ -273,6 +273,7 @@ class SchedulerPolicy:
                 on_error=self.on_error,
             )
         )
+        return f
 
 
 class EverySchedulerPolicy(SchedulerPolicy):
