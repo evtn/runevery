@@ -113,11 +113,14 @@ def parse_interval(interval_string: str) -> float:
 def sum_units(data: dict[str, object]):
     result: float = 0
 
-    for unit in data:
-        value = data[unit]
-
+    for unit, value in data.items():
         if not isinstance(value, (float, int)):
-            continue
+            if unit in units:
+                raise TypeError(
+                    f"Value '{value}' (in '{unit}={value}') is not numeric. Pass a float or int to the scheduler policy"
+                )
+            else:
+                continue
 
         if unit in units:
             result += units[unit] * value
