@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "runevery"
-version = "0.5.5"
+version = "0.5.6"
 description = ""
 authors = ["Dmitry Gritsenko <runevery@evtn.me>"]
 license = "MIT"
