@@ -29,8 +29,8 @@ class SchedulingTask:
         self.scheduled: list[float] = [self.time]
         self.name = name
 
-        self.last_run_start = 0
-        self.last_run_end = 0
+        self.last_run_start: float = 0
+        self.last_run_end: float = 0
 
     def get_last_run(self, strategy: IntervalStrategy):
         if strategy == "start":

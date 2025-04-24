@@ -49,8 +49,7 @@ class IntervalPlanner(SchedulingPlanner):
 
 
 class CooldownSource(Protocol):
-    def get_cooldown(self, interval: float) -> float:
-        ...
+    def get_cooldown(self, interval: float) -> float: ...
 
 
 class CooldownPlanner(SchedulingPlanner):
@@ -97,9 +96,24 @@ class FixedOffsetPlanner(SchedulingPlanner):
         return int((ts - self.offset) // self.interval)
 
     def check(self, task: SchedulingTask, /) -> bool:
-        return self.get_period(task.time) != self.get_period(
-            task.get_last_run(self.interval_strategy)
-        )
+        last_run = task.get_last_run(self.interval_strategy)
+
+        current_period = self.get_period(task.time)
+        last_run_period = self.get_period(last_run)
+
+        diff = current_period - last_run_period
+
+        if diff > 1 and not last_run:
+            # correct for the small starting offset
+            # this will make the scheduler think that the last run was in this period,
+            # even though there were no runs at all
+            task.last_run_start = task.last_run_end = task.time
+            diff = 0
+
+        if diff > 0:
+            print(last_run, current_period, last_run_period, diff)
+
+        return diff > 0
 
     def __str__(self):
         start_fmt = format_time(self.offset)
