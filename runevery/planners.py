@@ -152,5 +152,5 @@ class SwitchPlanner(SchedulingPlanner):
         self.planner_index = self.switch_callback(task)
 
 
-from .scheduler import IntervalStrategy
-from .task import SchedulingTask
+from .scheduler import IntervalStrategy  # noqa: E402
+from .task import SchedulingTask  # noqa: E402

@@ -1,23 +1,25 @@
-[tool.poetry]
+[project]
+authors = [
+    {name = "Dmitry Gritsenko", email = "runevery@evtn.me"},
+]
+license = {text = "MIT"}
+requires-python = "<4.0,>=3.8"
+dependencies = [
+    "typing-extensions<5.0.0,>=4.12.1",
+]
 name = "runevery"
-version = "0.5.6"
+version = "0.6.0"
 description = ""
-authors = ["Dmitry Gritsenko <runevery@evtn.me>"]
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/evtn/runevery"
-homepage = "https://github.com/evtn/runevery"
 keywords = []
 
-[tool.poetry.dependencies]
-python = "^3.8"
-typing-extensions = "^4.12.1"
+[project.urls]
+homepage = "https://github.com/evtn/runevery"
+repository = "https://github.com/evtn/runevery"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-coverage = "^7.2.7"
-pyright = "^1.1.365"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "pytest<8.0.0,>=7.4.0",
+    "coverage<8.0.0,>=7.2.7",
+    "pyrefly>=0.51.1",
+]

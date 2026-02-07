@@ -13,12 +13,12 @@ on:
       - "**.py"
       - "**.yml"
 jobs:
-  check_types:
+  check:
     runs-on: ubuntu-latest
-    name: Check Types
+    name: Check Types & Linter
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: git-checkout
@@ -29,42 +29,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.4"
 
-      - run: poetry install --with dev
-      - run: poetry run pyright runevery/*.py
+      - name: Run typecheck
+        run: uv run pyrefly check
 
-  # run-tests:
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-  #   name: Run Tests
-  #   steps:
-  #     - name: git-checkout
-  #       uses: actions/checkout@v3
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-
-  #     - name: Install Poetry
-  #       uses: abatilo/actions-poetry@v2
-
-  #     - run: poetry install --with dev
-
-  #     - name: Test
-  #       run: poetry run coverage run --include "soda/*" -m pytest test/
-
-  #     - name: Convert coverage data to XML
-  #       run: poetry run coverage xml
-
-  #     - name: Coveralls Update
-  #       uses: coverallsapp/github-action@v2
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         flag-name: ${{ matrix.python-version }}
-  #         coverage_format: cobertura
+      - name: Run linter
+        run: uv run ruff check

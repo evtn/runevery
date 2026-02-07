@@ -1,15 +1,17 @@
 from __future__ import annotations
+
+from asyncio import sleep
 from typing import Literal
 
-from .parser import parse_interval, sum_units
-from asyncio import sleep
 from typing_extensions import (
-    cast,
     NotRequired,
     Self,
     TypedDict,
     Unpack,
+    cast,
 )
+
+from .parser import parse_interval, sum_units
 
 
 class Scheduler:
@@ -202,8 +204,8 @@ class SchedulerPolicyKwargs(TypedDict):
 
     interval_strategy: NotRequired[IntervalStrategy]
     """
-    The interval strategy defines if the interval is counted from the start of the run or from the end. 
-    
+    The interval strategy defines if the interval is counted from the start of the run or from the end.
+
     The "start" option (default) is suitable if you want to start tasks at fixed intervals, without drifting off.
     The "end" option is better when you want to wait some time between tasks.
     """
@@ -250,14 +252,24 @@ class SchedulerPolicy:
 
             kwargs["planner"] = planner
 
-        data = {
+        data: SchedulerPolicyInternal = {
             "scheduler": self.scheduler,
             "planner": self.planner,
             "on_error": self.on_error,
             "name": self.name,
         }
 
-        data.update({k: v for k, v in kwargs.items() if k in data})
+        if "scheduler" in kwargs:
+            data["scheduler"] = kwargs["scheduler"]
+
+        if "planner" in kwargs:
+            data["planner"] = kwargs["planner"]
+
+        if "on_error" in kwargs:
+            data["on_error"] = kwargs["on_error"]
+
+        if "name" in kwargs:
+            data["name"] = kwargs["name"]
 
         return self.__class__(**data)
 
@@ -297,12 +309,12 @@ class AtSchedulerPolicy(SchedulerPolicy):
 run = Scheduler()
 
 
-from .task import SchedulingTask, TaskCallback
-from .planners import (
-    CooldownSource,
+from .planners import (  # noqa: E402
     CooldownPlanner,
+    CooldownSource,
     FixedOffsetPlanner,
     IntervalPlanner,
     NeverPlanner,
     SchedulingPlanner,
 )
+from .task import SchedulingTask, TaskCallback  # noqa: E402

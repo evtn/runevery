@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import inspect
-from time import time
-from asyncio import Task, AbstractEventLoop, get_event_loop
-from time import time
-from typing_extensions import Coroutine, Callable
-from heapq import heapify
+from asyncio import AbstractEventLoop, Task, get_event_loop
 from random import randint
+from time import time
 
+from typing_extensions import Callable, Coroutine
 
 TaskCallback = Callable[..., Coroutine[None, None, None]]
 
@@ -128,5 +126,10 @@ class SchedulingTask:
         return f"Task['run {self.final_name} {self.planner}']"
 
 
-from .scheduler import IntervalStrategy, Scheduler
-from .planners import FixedOffsetPlanner, NeverPlanner, SchedulingPlanner, SwitchPlanner
+from .planners import (  # noqa: E402
+    FixedOffsetPlanner,
+    NeverPlanner,
+    SchedulingPlanner,
+    SwitchPlanner,
+)
+from .scheduler import IntervalStrategy, Scheduler  # noqa: E402
