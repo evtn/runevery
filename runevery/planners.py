@@ -110,9 +110,6 @@ class FixedOffsetPlanner(SchedulingPlanner):
             task.last_run_start = task.last_run_end = task.time
             diff = 0
 
-        if diff > 0:
-            print(last_run, current_period, last_run_period, diff)
-
         return diff > 0
 
     def __str__(self):
