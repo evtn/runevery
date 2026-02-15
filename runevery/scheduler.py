@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from typing_extensions import (
     NotRequired,
@@ -12,6 +12,15 @@ from typing_extensions import (
 )
 
 from .parser import parse_interval, sum_units
+from .planners import (
+    CooldownPlanner,
+    CooldownSource,
+    FixedOffsetPlanner,
+    IntervalPlanner,
+    NeverPlanner,
+    SchedulingPlanner,
+)
+from .task import SchedulingTask, TaskCallback
 
 
 class Scheduler:
@@ -307,14 +316,3 @@ class AtSchedulerPolicy(SchedulerPolicy):
 
 
 run = Scheduler()
-
-
-from .planners import (  # noqa: E402
-    CooldownPlanner,
-    CooldownSource,
-    FixedOffsetPlanner,
-    IntervalPlanner,
-    NeverPlanner,
-    SchedulingPlanner,
-)
-from .task import SchedulingTask, TaskCallback  # noqa: E402
