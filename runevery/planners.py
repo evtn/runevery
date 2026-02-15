@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Protocol, Sequence
 
 from .utils import format_duration, format_time
+
+if TYPE_CHECKING:
+    from .scheduler import IntervalStrategy
+    from .task import SchedulingTask
 
 
 class SchedulingPlanner:
@@ -147,7 +151,3 @@ class SwitchPlanner(SchedulingPlanner):
     def on_run(self, task: SchedulingTask):
         self.current_planner.on_run(task)
         self.planner_index = self.switch_callback(task)
-
-
-from .scheduler import IntervalStrategy  # noqa: E402
-from .task import SchedulingTask  # noqa: E402

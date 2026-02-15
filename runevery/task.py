@@ -4,8 +4,17 @@ import inspect
 from asyncio import AbstractEventLoop, Task, get_event_loop
 from random import randint
 from time import time
+from typing import TYPE_CHECKING
 
 from typing_extensions import Callable, Coroutine
+
+if TYPE_CHECKING:
+    from .planners import (
+        FixedOffsetPlanner,
+        SchedulingPlanner,
+        SwitchPlanner,
+    )
+    from .scheduler import IntervalStrategy, Scheduler
 
 TaskCallback = Callable[..., Coroutine[None, None, None]]
 
@@ -94,9 +103,13 @@ class SchedulingTask:
         self.run_callback(callback_wrapper, scheduler, event_loop)
 
     def discard(self):
+        from .planners import NeverPlanner
+
         self.planner = NeverPlanner(interval_strategy="start")
 
     def pause_until(self, ts: float):
+        from .planners import FixedOffsetPlanner, SwitchPlanner
+
         def reinstate_switch(task: SchedulingTask):
             new_planner.planners.pop(new_planner.planner_index)
             self.planner = new_planner.planners[0]
@@ -124,12 +137,3 @@ class SchedulingTask:
 
     def __repr__(self):
         return f"Task['run {self.final_name} {self.planner}']"
-
-
-from .planners import (  # noqa: E402
-    FixedOffsetPlanner,
-    NeverPlanner,
-    SchedulingPlanner,
-    SwitchPlanner,
-)
-from .scheduler import IntervalStrategy, Scheduler  # noqa: E402
